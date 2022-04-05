@@ -13,16 +13,18 @@ import tensorflow as tf
 from keras.preprocessing.image import load_img
 from keras.preprocessing.image import img_to_array
 from keras.preprocessing.image import smart_resize
+import base64
+import io
 
 def page_initializer(clear = False):
     if 'ingredients_photos' not in st.session_state or clear == True:
         st.session_state.ingredients_photos = []
-    if 'ingredients_selection' not in st.session_state or clear == True:
-        st.session_state.ingredients_selection = []
     if 'text_input_content' not in st.session_state or clear == True:
         st.session_state.text_input_content = ""
     if 'ingredients' not in st.session_state or clear == True:
         st.session_state.ingredients = np.array([])
+    if 'ingredients_selection' not in st.session_state or clear == True:
+        st.session_state.ingredients_selection = []
     if 'api_output' not in st.session_state or clear == True:
         st.session_state.api_output = []
 
@@ -63,14 +65,23 @@ def photos_uploader():
 def ingredients_from_predictions(img_files_list):
     ### Input : list of image files to feed to the classification / detection model
     ### Ouptut : list of ingredients names predicted by the model
-    output_ingredients_list = []
-    url = 'http://container-local-api:4000/predict' # URL of our model API predictions
-    for img_file in img_files_list:
+    output_ingredients_list = np.array([]) # We use a ndarray type keep a 1-dimensional list even if we append lists to it 
+    # url = 'http://container-local-api:4000/predict' # URL of our model API predictions
+    url = 'http://container-local-api:4000/detect' # URL of our model API predictions
+    for i, img_file in enumerate(img_files_list):
         # Preapring files for the post request in the format (file name, file content in bytes)
         files = {'img_file': (img_file.name, img_file.getvalue())}
         # Getting predictions from the model API and storing the results in the output list
         r = requests.post(url, files=files)
-        output_ingredients_list.append(r.json()["prediction"])
+        # output_ingredients_list = np.append(output_ingredients_list, r.json()["prediction"])
+        output_ingredients_list = np.append(output_ingredients_list, r.json()["predictions"])
+        if len(r.json()["predictions"])!=0:
+            predictions_image = Image.open(io.BytesIO(base64.b64decode(r.json()["predictions_image"]))) # Decoding the b64 string we obtained from the model
+            st.write(f"Ingredients detected on image {i+1} ! ")
+            st.image(predictions_image)
+        else:
+            st.write(f"No ingredients detected on image {i+1}.")
+            st.image(img_file)    
     return output_ingredients_list
 
 def ingredients_from_text_inputs():
