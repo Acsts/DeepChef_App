@@ -67,21 +67,25 @@ def ingredients_from_predictions(img_files_list):
     ### Ouptut : list of ingredients names predicted by the model
     output_ingredients_list = np.array([]) # We use a ndarray type keep a 1-dimensional list even if we append lists to it 
     # url = 'http://container-local-api:4000/predict' # URL of our model API predictions
-    url = 'http://container-local-api:4000/detect' # URL of our model API predictions
+    # url = 'http://container-local-api:4000/detect' # URL of our model API predictions
+    url = 'https://deepchef-api.herokuapp.com/detect'
     for i, img_file in enumerate(img_files_list):
         # Preapring files for the post request in the format (file name, file content in bytes)
         files = {'img_file': (img_file.name, img_file.getvalue())}
         # Getting predictions from the model API and storing the results in the output list
-        r = requests.post(url, files=files)
-        # output_ingredients_list = np.append(output_ingredients_list, r.json()["prediction"])
-        output_ingredients_list = np.append(output_ingredients_list, r.json()["predictions"])
-        if len(r.json()["predictions"])!=0:
-            predictions_image = Image.open(io.BytesIO(base64.b64decode(r.json()["predictions_image"]))) # Decoding the b64 string we obtained from the model
-            st.write(f"Ingredients detected on image {i+1} ! ")
-            st.image(predictions_image)
-        else:
-            st.write(f"No ingredients detected on image {i+1}.")
-            st.image(img_file)    
+        try:
+            r = requests.post(url, files=files)
+            # output_ingredients_list = np.append(output_ingredients_list, r.json()["prediction"])
+            output_ingredients_list = np.append(output_ingredients_list, r.json()["predictions"])
+            if len(r.json()["predictions"])!=0:
+                predictions_image = exif_transpose(Image.open(io.BytesIO(base64.b64decode(r.json()["predictions_image"])))) # Decoding the b64 string we obtained from the model
+                st.write(f"Ingredients detected on image {i+1} ! ")
+                st.image(predictions_image)
+            else:
+                st.write(f"No ingredients detected on image {i+1}.")
+                st.image(exif_transpose(Image.open(img_file)))
+        except requests.exceptions.ConnectionError:
+            st.write("Failed to connect to the ingredients detection API")
     return output_ingredients_list
 
 def ingredients_from_text_inputs():
@@ -102,11 +106,14 @@ def enumeration_phrase(listing):
 def get_recipe_by_ingredients(ingredients):
     response = requests.get("https://api.spoonacular.com/recipes/findByIngredients?ingredients={}&number=3&apiKey=b11c72687e7b45418f7c2a6c55efe798".format(ingredients))
     result = response.json()
-    result_df = pd.json_normalize(result)
-    ingredient_feature_to_extract = 'name'
-    result_df[f"usedIngredients_{ingredient_feature_to_extract}s"]=result_df['usedIngredients'].apply(lambda x : [x[ingredient_idx][ingredient_feature_to_extract] for ingredient_idx in range(len(x))])
-    result_df[f'missedIngredients_{ingredient_feature_to_extract}s']=result_df['missedIngredients'].apply(lambda x : [x[ingredient_idx][ingredient_feature_to_extract] for ingredient_idx in range(len(x))])
-    result_df[f'unusedIngredients_{ingredient_feature_to_extract}s']=result_df['unusedIngredients'].apply(lambda x : [x[ingredient_idx][ingredient_feature_to_extract] for ingredient_idx in range(len(x))])
+    if len(result)!=0:
+        result_df = pd.json_normalize(result)
+        ingredient_feature_to_extract = 'name'
+        result_df[f"usedIngredients_{ingredient_feature_to_extract}s"]=result_df['usedIngredients'].apply(lambda x : [x[ingredient_idx][ingredient_feature_to_extract] for ingredient_idx in range(len(x))])
+        result_df[f'missedIngredients_{ingredient_feature_to_extract}s']=result_df['missedIngredients'].apply(lambda x : [x[ingredient_idx][ingredient_feature_to_extract] for ingredient_idx in range(len(x))])
+        result_df[f'unusedIngredients_{ingredient_feature_to_extract}s']=result_df['unusedIngredients'].apply(lambda x : [x[ingredient_idx][ingredient_feature_to_extract] for ingredient_idx in range(len(x))])
+    else:
+        result_df = []
     return result_df
 
 def recipe_summary(recipe_id):
@@ -154,49 +161,54 @@ if __name__ == '__main__':
     #########
     # CALLING THE API AND GET THE RECIPES
     api_call = st.button("READY TO COOK !! 👨‍🍳️")
-    # Calling the API only if the api_call button is clicked AND the ingredients list has been updated since the last api_call click
+    # Calling the API only if the api_call button is clicked AND the uniques ingredients list has been updated since the last api_call click
     if api_call and (sorted(st.session_state.ingredients.tolist()) != sorted(st.session_state.ingredients_selection)):
         st.session_state.ingredients_selection = sorted(st.session_state.ingredients.tolist())
         st.session_state.api_output = get_recipe_by_ingredients(','.join(st.session_state.ingredients_selection))
     # Displaying the recipe propositions
     if len(st.session_state.ingredients_selection)!=0:
-        col1, col2 = st.columns(2)
-        with col1:
-            #st.write("Your ingredients :", ','.join(st.session_state.ingredients))
-            st.markdown("**1️⃣ Our chef suggests :**")
-            main_recipe_box = st.selectbox("Select the recipe that best suits you :", st.session_state.api_output["title"].sort_values().unique())
-            main_recipe = st.session_state.api_output[st.session_state.api_output["title"]==main_recipe_box].reset_index()
-            main_recipe_photo = main_recipe['image'][0]
-            #st.write("For this recipe, you use " + enumeration_phrase(main_recipe['usedIngredients_names'][0]) + '.')
-            #st.write("You just have to buy " + enumeration_phrase(main_recipe['missedIngredients_names'][0]) + " and it will be piece of cake !")
-            st.image(main_recipe_photo, width = 350)
-        with col2:
-            st.markdown("**2️⃣ The Ingredients to make it :**")
-            used_ingredients = main_recipe['usedIngredients_names'][0]
-            missed_ingredients = main_recipe['missedIngredients_names'][0]
-            leftovers_list = main_recipe['unusedIngredients_names'][0]
-            
-            st.write("🥗 You already have " + enumeration_phrase(used_ingredients) + '.')
-            if len(missed_ingredients)!=0: 
-                st.write("🛒 You need to buy " + enumeration_phrase(missed_ingredients) + '.')
-            else:
-                st.write("...and you need nothing more !! 🙌 ")
-            # Leftovers recipe suggestion
-            st.markdown("---") 
-            if len(leftovers_list)!=0:
-                st.write(f"Oh wait ! And after that, you could use {enumeration_phrase(leftovers_list)} in another recipe such as :")
-                leftovers_recipes = get_recipe_by_ingredients(','.join(leftovers_list))
-                leftovers_recipe_photo = leftovers_recipes['image'][0]
-                st.image(leftovers_recipe_photo, width = 150)
-        st.markdown("---") 
+        if len(st.session_state.api_output)!=0:
+            col1, col2 = st.columns(2)
+            with col1:
+                #st.write("Your ingredients :", ','.join(st.session_state.ingredients))
+                st.markdown("**1️⃣ Our chef suggests :**")
+                main_recipe_box = st.selectbox("Select the recipe that best suits you :", st.session_state.api_output["title"].sort_values().unique())
+                main_recipe = st.session_state.api_output[st.session_state.api_output["title"]==main_recipe_box].reset_index()
+                main_recipe_photo = main_recipe['image'][0]
+                #st.write("For this recipe, you use " + enumeration_phrase(main_recipe['usedIngredients_names'][0]) + '.')
+                #st.write("You just have to buy " + enumeration_phrase(main_recipe['missedIngredients_names'][0]) + " and it will be piece of cake !")
+                st.image(main_recipe_photo, width = 350)
+            with col2:
+                st.markdown("**2️⃣ The Ingredients to make it :**")
+                used_ingredients = main_recipe['usedIngredients_names'][0]
+                missed_ingredients = main_recipe['missedIngredients_names'][0]
+                leftovers_list = list(set(main_recipe['unusedIngredients_names'][0]))
+                
+                st.write("🥗 You already have " + enumeration_phrase(used_ingredients) + '.')
+                if len(missed_ingredients)!=0: 
+                    st.write("🛒 You need to buy " + enumeration_phrase(missed_ingredients) + '.')
+                else:
+                    st.write("...and you need nothing more !! 🙌 ")
+                # Leftovers recipe suggestion
+                st.markdown("---") 
+                if len(leftovers_list)!=0:
+                    st.write(f"Oh wait ! And after that, you could use {enumeration_phrase(leftovers_list)} in another recipe such as :")
+                    leftovers_recipes = get_recipe_by_ingredients(','.join(leftovers_list))
+                    leftovers_recipe_photo = leftovers_recipes['image'][0]
+                    st.image(leftovers_recipe_photo, width = 150)
 
-        #Recipe expander
-        main_recipe_id = main_recipe['id'][0]
-        recipe_instructions = recipe_summary(main_recipe_id)
-        with st.expander("Get the instructions! 👨‍🍳"):
-            st.markdown("#### Here are the instructions for your recipe : ")
-            st.markdown(recipe_instructions, unsafe_allow_html=True)
-        #Here we need to insert the recipe guidance from recupe
+            st.markdown("---") 
+
+            #Recipe expander
+            main_recipe_id = main_recipe['id'][0]
+            recipe_instructions = recipe_summary(main_recipe_id)
+            with st.expander("Get the instructions! 👨‍🍳"):
+                st.markdown("#### Here are the instructions for your recipe : ")
+                st.markdown(recipe_instructions, unsafe_allow_html=True)
+            #Here we need to insert the recipe guidance from recupe
+        else:
+            st.write("Hmm, no recipe found for this ingredients list... Are you sure they're real ingredients ?")
+        
 
     st.markdown("---") 
     col3, col4 = st.columns(2)
