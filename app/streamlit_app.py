@@ -1,18 +1,12 @@
-### Hypothesis : 
-# The model or API calls to transform inputs into ingredient names are only called once the associated button "Submit" is clicked. 
-
-from turtle import onclick
+#Logo by gregoire@gm-drone.fr
 import streamlit as st
+from streamlit_lottie import st_lottie
 import pandas as pd
 import numpy as np
 import requests
-from pprint import pprint
 from PIL import Image
 from PIL.ImageOps import exif_transpose
-import tensorflow as tf
-from keras.preprocessing.image import load_img
-from keras.preprocessing.image import img_to_array
-from keras.preprocessing.image import smart_resize
+import time
 import base64
 import io
 
@@ -28,27 +22,39 @@ def page_initializer(clear = False):
     if 'api_output' not in st.session_state or clear == True:
         st.session_state.api_output = []
 
+def load_lottieurl(url: str):
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    return r.json()
+
 def header():
     # Page config
     st.set_page_config(
     page_title="DeepChef",
     page_icon="🥬",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="expanded"
-    #menu_items={'Get Help': 'https://www.extremelycoolapp.com/help','Report a bug': "https://www.extremelycoolapp.com/bug",'About': "# This is a header."}
     )
     # Page logo
-    logo_image = Image.open('img/logo_image.png')
-    st.image(logo_image, output_format="PNG", width=180)
+    logo_image = Image.open('img/DEEPCHEF_PAYSAGE-LARGE.png')
+    st.image(logo_image, output_format="PNG")
     # Page title and introduction
-    st.title('Welcome to DeepChef, your favorite kitchen help')
-    st.markdown("###### All you needed was a pinch of inspiration !💡")
+    col_intro, col_lottie = st.columns([4,1])
+    with col_intro:
+        st.text("")
+        st.text("")
+        st.markdown("##### Welcome to DeepChef, your favorite kitchen help")
+        st.markdown("###### All you needed was a pinch of inspiration!💡")
+    with col_lottie:
+        lottie_cook = load_lottieurl("https://assets8.lottiefiles.com/packages/lf20_5e4mlcwz.json")
+        st_lottie(lottie_cook,height=150,width=150,speed=1)
     st.markdown("---")
 
 def photos_uploader(): 
     ### Displays a file uploader and stores in session_state a list of photos each in numpy.array format (list updated at each file add/removal)
     # Photos collected from the uploader
-    img_files_buffer = st.file_uploader("Upload photos of your ingredidents :",
+    img_files_buffer = st.file_uploader("Upload photos of your ingredidents:",
     #type = <array of types depending of the inputs accepted by the model>,
     accept_multiple_files = True
     )
@@ -66,8 +72,6 @@ def ingredients_from_predictions(img_files_list):
     ### Input : list of image files to feed to the classification / detection model
     ### Ouptut : list of ingredients names predicted by the model
     output_ingredients_list = np.array([]) # We use a ndarray type keep a 1-dimensional list even if we append lists to it 
-    # url = 'http://container-local-api:4000/predict' # URL of our model API predictions
-    # url = 'http://container-local-api:4000/detect' # URL of our model API predictions
     url = 'https://deepchef-api.herokuapp.com/detect'
     for i, img_file in enumerate(img_files_list):
         # Preapring files for the post request in the format (file name, file content in bytes)
@@ -79,7 +83,7 @@ def ingredients_from_predictions(img_files_list):
             output_ingredients_list = np.append(output_ingredients_list, r.json()["predictions"])
             if len(r.json()["predictions"])!=0:
                 predictions_image = exif_transpose(Image.open(io.BytesIO(base64.b64decode(r.json()["predictions_image"])))) # Decoding the b64 string we obtained from the model
-                st.write(f"Ingredients detected on image {i+1} ! ")
+                st.success(f"Ingredients detected on image {i+1} : {enumeration_phrase(list(set(r.json()['predictions'])))}")
                 st.image(predictions_image)
             else:
                 st.write(f"No ingredients detected on image {i+1}.")
@@ -99,12 +103,10 @@ def clear_ingredients_list():
     st.session_state.ingredients = np.array([])
 
 def enumeration_phrase(listing):
-    if len(listing)==0:
-        phrase = 'nothing !'
-    return  f"{', '.join(listing[:-1])} and " * (len(listing)>1) + str(listing[-1])
+    return f"{', '.join([s.capitalize() for s in listing][:-1])} and " * (len(listing)>1) + str(listing[-1].capitalize())
 
 def get_recipe_by_ingredients(ingredients):
-    response = requests.get("https://api.spoonacular.com/recipes/findByIngredients?ingredients={}&number=3&apiKey=b11c72687e7b45418f7c2a6c55efe798".format(ingredients))
+    response = requests.get("https://api.spoonacular.com/recipes/findByIngredients?ingredients={}&number=5&apiKey=b11c72687e7b45418f7c2a6c55efe798".format(ingredients))
     result = response.json()
     if len(result)!=0:
         result_df = pd.json_normalize(result)
@@ -139,19 +141,19 @@ if __name__ == '__main__':
     # GETTING PHOTOS AND TEXT AS INPUTS
     col_photos, col_text = st.columns(2)
     with col_photos:
-        st.markdown("#### Show me what you've got")
+        st.markdown("##### Show me what you've got")
         photos_uploader()
         submit_photos = st.button("Submit photos")
         if submit_photos:
             st.session_state.ingredients = np.append(st.session_state.ingredients, ingredients_from_predictions(st.session_state.ingredients_photos))
             st.session_state.ingredients = st.session_state.ingredients.flatten()
     with col_text:
-        st.markdown("#### Or just write it down")
-        text_input = st.text_input('Please enter ingredients names separated by commas. eg=bananas,apple,nuts',
+        st.markdown("##### Or just write it down")
+        text_input = st.text_input("Please tell me what's in your fridge 🍽",help = 'Please insert your ingredients separated by commas',
         key = 'text_input_content',
         on_change = ingredients_from_text_inputs
         )
-    st.markdown(f"##### You have : {', '.join(set([name.capitalize() for name in st.session_state.ingredients.tolist()]))}")
+    st.markdown(f"###### You have: {', '.join(set([name.capitalize() for name in st.session_state.ingredients.tolist()]))}")
     if len(st.session_state.ingredients)!=0:
         clear_ingredients = st.button("Clear ingredients list", on_click = clear_ingredients_list)
 
@@ -165,21 +167,22 @@ if __name__ == '__main__':
     if api_call and (sorted(st.session_state.ingredients.tolist()) != sorted(st.session_state.ingredients_selection)):
         st.session_state.ingredients_selection = sorted(st.session_state.ingredients.tolist())
         st.session_state.api_output = get_recipe_by_ingredients(','.join(st.session_state.ingredients_selection))
+        with st.spinner('Wait for it...'):
+            time.sleep(1)
+            st.success('Here you are!')
     # Displaying the recipe propositions
     if len(st.session_state.ingredients_selection)!=0:
         if len(st.session_state.api_output)!=0:
             col1, col2 = st.columns(2)
             with col1:
                 #st.write("Your ingredients :", ','.join(st.session_state.ingredients))
-                st.markdown("**1️⃣ Our chef suggests :**")
-                main_recipe_box = st.selectbox("Select the recipe that best suits you :", st.session_state.api_output["title"].sort_values().unique())
+                st.markdown("**1️⃣ Our chef suggests:**")
+                main_recipe_box = st.selectbox("Select the recipe that best suits you:", st.session_state.api_output["title"].sort_values().unique())
                 main_recipe = st.session_state.api_output[st.session_state.api_output["title"]==main_recipe_box].reset_index()
                 main_recipe_photo = main_recipe['image'][0]
-                #st.write("For this recipe, you use " + enumeration_phrase(main_recipe['usedIngredients_names'][0]) + '.')
-                #st.write("You just have to buy " + enumeration_phrase(main_recipe['missedIngredients_names'][0]) + " and it will be piece of cake !")
                 st.image(main_recipe_photo, width = 350)
             with col2:
-                st.markdown("**2️⃣ The Ingredients to make it :**")
+                st.markdown("**2️⃣ The Ingredients to make it:**")
                 used_ingredients = main_recipe['usedIngredients_names'][0]
                 missed_ingredients = main_recipe['missedIngredients_names'][0]
                 leftovers_list = list(set(main_recipe['unusedIngredients_names'][0]))
@@ -192,9 +195,11 @@ if __name__ == '__main__':
                 # Leftovers recipe suggestion
                 st.markdown("---") 
                 if len(leftovers_list)!=0:
-                    st.write(f"Oh wait ! And after that, you could use {enumeration_phrase(leftovers_list)} in another recipe such as :")
+                    st.write(f"Oh wait! And after that, you could use {enumeration_phrase(leftovers_list)} in another recipe such as :")
                     leftovers_recipes = get_recipe_by_ingredients(','.join(leftovers_list))
                     leftovers_recipe_photo = leftovers_recipes['image'][0]
+                    leftovers_recipe_name = leftovers_recipes['title'][0]
+                    st.write(leftovers_recipe_name)
                     st.image(leftovers_recipe_photo, width = 150)
 
             st.markdown("---") 
@@ -208,36 +213,34 @@ if __name__ == '__main__':
             #Here we need to insert the recipe guidance from recupe
         else:
             st.write("Hmm, no recipe found for this ingredients list... Are you sure they're real ingredients ?")
-        
-
     st.markdown("---") 
-    col3, col4 = st.columns(2)
-    with col3:
     #Contact form
-        with st.expander("Get in Touch With the Chef 📫"):
-            contact_form = """
-            <form action="https://formsubmit.co/deepfoodapp@gmail.com" method="POST">
-                <input type="hidden" name="_captcha" value="false">
-                <input type="text" name="name" placeholder="Your name" required>
-                <input type="email" name="email" placeholder="Your email" required>
-                <textarea name="message" placeholder="Your message here"></textarea>
-                <button type="submit">Send</button>
-            </form>
-            """
-
-            st.markdown(contact_form, unsafe_allow_html=True)
-
-            # Use Local CSS File
-            def local_css(file_name):
-                with open(file_name) as f:
-                    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-            local_css("style/style.css")
-            
+    with st.expander("Get in Touch With us 📫"):
+        contact_form = """
+        <form action="https://formsubmit.co/deepfoodapp@gmail.com" method="POST">
+            <input type="hidden" name="_captcha" value="false">
+            <input type="text" name="name" placeholder="Your name" required>
+            <input type="email" name="email" placeholder="Your email" required>
+            <textarea name="message" placeholder="Your message here"></textarea>
+            <button type="submit">Send</button>
+        </form>
+        """
+        st.markdown(contact_form, unsafe_allow_html=True)
+        # Use Local CSS File
+        def local_css(file_name):
+            with open(file_name) as f:
+                st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+        local_css("style/style.css")
+    col3, col4 = st.columns([1,4])
+    with col3:
+        #Page logo
+        image = Image.open('img/DEEPCHEF3.png')
+        st.image(image, output_format="PNG",width=145)
     with col4:
-    ### Footer 
+        ### Footer 
         st.markdown("""     
-                DeepChef has been made with ❤️ by [Lea Boussekeyt](), [Quentin Gottafray]()  [Baptiste Eluard](https://github.com/baptel), [Antoine Costes](https://github.com/Acsts) and [Christopher Gbezo](https://github.com/cgbezo)
+                DeepChef has been made with ❤️ by [Lea Boussekeyt](https://github.com/leaboussekeyt), [Quentin Gottafray](https://github.com/Quentin50)  [Baptiste Eluard](https://github.com/baptel), [Antoine Costes](https://github.com/Acsts) and [Christopher Gbezo](https://github.com/cgbezo)
             """)
-        st.markdown("""If you want to learn more, please contact us at [DeepChef Team](mailto:deepfoodapp@gmail.com) 📖""")
 
-    debug_inner_state()
+
+    #debug_inner_state()
