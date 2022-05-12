@@ -31,13 +31,13 @@ Follow instruction in ultralytics' repository. Command <br/>`python train.py --i
 
 
 ## Team contributors
-Quentin Gottafray
-Antoine Costes1
-Christopher Gbezo
-Baptiste Eluard
+Quentin Gottafray<br/>
+Antoine Costes<br/>
+Christopher Gbezo<br/>
+Baptiste Eluard<br/>
 Léa Boussekeyt
 
 ## References
-App link: https://deepchef-app.herokuapp.com/
-Project presentation: https://docs.google.com/presentation/d/1eNNhturBgnbf9MO3AZ3NRq6GgE9U0vso55SP4R5BbA8/edit?usp=sharing
+App link: https://deepchef-app.herokuapp.com/ <br/>
+Project presentation: https://docs.google.com/presentation/d/1eNNhturBgnbf9MO3AZ3NRq6GgE9U0vso55SP4R5BbA8/edit?usp=sharing <br/>
 Project presentation video: 
