@@ -22,10 +22,10 @@ A special dataset containing 10 000 images was fetched from OpenImageV6 Database
 
 ## Usage
 ### Fetch data from OpenImageV6
-Follow instruction in NanoCode012's repository. Command `python main.py downloader --classes classes.txt --type_csv all --yoloLabelStyle --multiclasses 1 --limit 600` where classes.txt is the list of ingredients you want.
+Follow instruction in NanoCode012's repository. Command <br/>`python main.py downloader --classes classes.txt --type_csv all --yoloLabelStyle --multiclasses 1 --limit 600`<br/> where classes.txt is the list of ingredients you want.
 
 ### Train YoloV5 model
-Follow instruction in ultralytics' repository. Command `python train.py --img 640 --batch-size 16 --epochs 50 --save-period 10 --data yolov5s.yaml --weights yolov5s.pt --freeze 10` for example.
+Follow instruction in ultralytics' repository. Command <br/>`python train.py --img 640 --batch-size 16 --epochs 50 --save-period 10 --data yolov5s.yaml --weights yolov5s.pt --freeze 10`<br/> for example.
 
 ### ...
 
