@@ -12,7 +12,7 @@ We used different tools to create the systems interacting with each other in thi
 - The online app created with streamlit deployed with Heroku
 
 ## Dataset
-A special dataset containing 10 000 images was fetched from OpenImageV6 Database. It is available on RoboFlow at https://app.roboflow.com/ds/asCOwPsjUr?key=1nVXvQ7xsQ . To download and extract use command `curl -L "https://app.roboflow.com/ds/asCOwPsjUr?key=1nVXvQ7xsQ" > roboflow.zip; unzip roboflow.zip; rm roboflow.zip`
+A special dataset containing 10 000 images was fetched from OpenImageV6 Database. It is available on RoboFlow at https://app.roboflow.com/ds/asCOwPsjUr?key=1nVXvQ7xsQ . To download and extract use command <br/> `curl -L "https://app.roboflow.com/ds/asCOwPsjUr?key=1nVXvQ7xsQ" > roboflow.zip; unzip roboflow.zip; rm roboflow.zip`
 
 ## Prerequisites
 
