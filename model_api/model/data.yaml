@@ -1,0 +1,5 @@
+train: ../train/images
+val: ../valid/images
+
+nc: 20
+names: ['Apple', 'Banana', 'Bell pepper', 'Broccoli', 'Carrot', 'Cheese', 'Cucumber', 'Grape', 'Grapefruit', 'Lemon', 'Mushroom', 'Orange', 'Peach', 'Pear', 'Pomegranate', 'Potato', 'Pumpkin', 'Radish', 'Tomato', 'Zucchini']

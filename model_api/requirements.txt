@@ -1,0 +1,24 @@
+# For YoloV5----------------------------------------
+matplotlib
+numpy
+opencv-python
+#Pillow
+PyYAML
+requests
+scipy
+torch
+torchvision
+tqdm
+tensorboard
+#pandas
+seaborn
+thop  # FLOPs computation
+
+# For the API
+uvicorn[standard]
+gunicorn
+pandas
+numpy
+pydantic
+fastapi
+python-multipart
