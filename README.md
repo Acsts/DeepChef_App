@@ -3,6 +3,8 @@
 ## Video Presentation
 Checkout the 10min project presentation video here: https://share.vidyard.com/watch/PH1jj9pV9vEUB1fWdwVQg9?
 
+## About the app
+
 Deep chef is an online app that helps you find the recipe you need. Take a picture of you fruits and vegetables, the app will recognize it and suggest different recipes. 
 
 ## Objective
