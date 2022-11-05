@@ -1,7 +1,10 @@
 # Deep chef app
 
+*This project (among others) has been submitted for my Jedha Data Fullstack program certification*
+
 ## Video Presentation
-Checkout the 10min project presentation video here: https://share.vidyard.com/watch/PH1jj9pV9vEUB1fWdwVQg9?
+
+**Checkout the 10min project presentation video (in French) here: https://share.vidyard.com/watch/PH1jj9pV9vEUB1fWdwVQg9?**
 
 ## About the app
 
