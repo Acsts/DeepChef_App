@@ -8,7 +8,9 @@
 
 ## About the app
 
-Deep chef is an online app that helps you find the recipe you need. Take a picture of you fruits and vegetables, the app will recognize it and suggest different recipes. 
+Deep chef is an online app that helps you find the recipe you need. Take a picture of you fruits and vegetables, the app will recognize it and suggest different recipes.
+
+**Try the app here!👉 https://deepchef-app.herokuapp.com/**
 
 ## Objective
 We used different tools to create the systems interacting with each other in this app:
