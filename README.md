@@ -41,7 +41,7 @@ Follow instruction in ultralytics' repository. Command <br/>`python train.py --i
 
 
 ## Team contributors
-Quentin Gottafray<br/>
+Axelle Gottafray<br/>
 Antoine Costes<br/>
 Christopher Gbezo<br/>
 Baptiste Eluard<br/>
